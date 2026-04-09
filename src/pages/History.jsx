@@ -82,7 +82,7 @@ const History = () => {
       const startDateTime = `${date} ${startTime}:00`;
       const endDateTime = `${date} ${endTime}:00`;
       console.log('[History] Requesting playback image:', { startTime: startDateTime, endTime: endDateTime });
-      const response = await api.post('/api/cameras/generate-playback', {
+      const response = await api.post('/api/cameras/get-image', {
         cameraId,
         startTime: startDateTime,
         endTime: endDateTime,
