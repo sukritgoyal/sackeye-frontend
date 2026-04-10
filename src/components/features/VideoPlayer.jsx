@@ -155,6 +155,35 @@ const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetecti
     };
   }, []);
 
+  // Handle fullscreen change (ESC key, back button, etc.)
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(document.fullscreenElement || 
+                                        document.webkitFullscreenElement || 
+                                        document.msFullscreenElement);
+      
+      if (!isCurrentlyFullscreen && isFullscreen) {
+        // Exited fullscreen
+        setIsFullscreen(false);
+        
+        // Unlock orientation when exiting fullscreen
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullscreen]);
+
   // Handle detection display based on current time
   React.useEffect(() => {
     if (!detections.length) {
@@ -255,6 +284,14 @@ const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetecti
       if (requestFullscreen) {
         requestFullscreen.call(element);
       }
+      
+      // Lock to landscape orientation
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(err => {
+          console.log('[VideoPlayer] Could not lock orientation:', err);
+        });
+      }
+      
       setIsFullscreen(true);
     } else {
       // Exit fullscreen
@@ -264,6 +301,12 @@ const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetecti
       if (exitFullscreen) {
         exitFullscreen.call(document);
       }
+      
+      // Unlock orientation to allow normal rotation
+      if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+      }
+      
       setIsFullscreen(false);
     }
   };

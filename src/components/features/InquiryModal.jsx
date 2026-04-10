@@ -85,7 +85,7 @@ const InquiryModal = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Email Address <span className="text-red-500">*</span>
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -93,7 +93,7 @@ const InquiryModal = ({ isOpen, onClose }) => {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              placeholder="your@email.com"
+              placeholder="you@example.com"
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
               disabled={isSubmitting}
             />
@@ -109,7 +109,7 @@ const InquiryModal = ({ isOpen, onClose }) => {
               name="mobileNumber"
               value={formData.mobileNumber}
               onChange={handleInputChange}
-              placeholder="+1 (555) 000-0000"
+              placeholder="+91 98765 43210"
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
               disabled={isSubmitting}
             />

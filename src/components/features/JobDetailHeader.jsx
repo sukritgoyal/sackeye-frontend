@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import InquiryModal from './InquiryModal';
 
 const JobDetailHeader = ({
   job,
@@ -10,10 +9,10 @@ const JobDetailHeader = ({
   handleTogglePublic,
   handleShare,
   showShareMenu,
-  setShowShareMenu
+  setShowShareMenu,
+  onInquireClick
 }) => {
   const navigate = useNavigate();
-  const [showInquiryModal, setShowInquiryModal] = useState(false);
 
   // Close share menu when clicking outside
   useEffect(() => {
@@ -44,7 +43,7 @@ const JobDetailHeader = ({
         <div className="flex items-center gap-2">
           {isPublicView && (
             <button
-              onClick={() => setShowInquiryModal(true)}
+              onClick={onInquireClick}
               className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50"
               title="Contact our team about installing this system"
             >
@@ -129,10 +128,6 @@ const JobDetailHeader = ({
           )}
         </div>
       </div>
-      <InquiryModal 
-        isOpen={showInquiryModal} 
-        onClose={() => setShowInquiryModal(false)} 
-      />
     </header>
   );
 };

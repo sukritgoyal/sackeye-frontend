@@ -3,6 +3,7 @@ import { useParams, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import JobDetailHeader from '../components/features/JobDetailHeader';
 import JobDetailContent from '../components/features/JobDetailContent';
+import InquiryModal from '../components/features/InquiryModal';
 
 const JobDetail = () => {
   const { jobId } = useParams();
@@ -18,6 +19,7 @@ const JobDetail = () => {
   const [selectedCarouselDetectionId, setSelectedCarouselDetectionId] = useState(null);
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showInquiryModal, setShowInquiryModal] = useState(false);
 
   // Fetch job details and detections
   useEffect(() => {
@@ -197,6 +199,7 @@ const JobDetail = () => {
         handleShare={handleShare}
         showShareMenu={showShareMenu}
         setShowShareMenu={setShowShareMenu}
+        onInquireClick={() => setShowInquiryModal(true)}
       />
 
       {/* Content */}
@@ -221,6 +224,12 @@ const JobDetail = () => {
         setSortOrder={setSortOrder}
         setSelectedCarouselDetectionId={setSelectedCarouselDetectionId}
         setMarkedDetections={setMarkedDetections}
+      />
+
+      {/* Inquiry Modal */}
+      <InquiryModal
+        isOpen={showInquiryModal}
+        onClose={() => setShowInquiryModal(false)}
       />
     </div>
   );
