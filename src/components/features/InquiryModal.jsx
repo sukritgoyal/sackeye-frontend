@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const InquiryModal = ({ isOpen, onClose }) => {
+const InquiryModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     email: '',
     mobileNumber: ''
@@ -18,28 +18,33 @@ const InquiryModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.email.trim() || !formData.mobileNumber.trim()) {
-      alert('Please fill in all fields');
-      return;
+    // Optional validation - only validate format if fields are provided
+    if (formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      alert('Please enter a valid email address');
-      return;
-    }
-
-    // Basic mobile validation (just check if it has digits)
-    if (!/\d/.test(formData.mobileNumber)) {
-      alert('Please enter a valid mobile number');
-      return;
+    if (formData.mobileNumber.trim()) {
+      if (!/\d/.test(formData.mobileNumber)) {
+        alert('Please enter a valid mobile number');
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
-      // For now, just alert
+      // Call the submit function passed from parent
+      // This will send the request with incomplete data if needed
+      if (onSubmit) {
+        const result = await onSubmit(formData);
+        if (!result) {
+          throw new Error('Submission failed');
+        }
+      }
+      
       alert('Thank you for your inquiry! Our team will contact you soon.');
       
       // Reset form
@@ -51,7 +56,10 @@ const InquiryModal = ({ isOpen, onClose }) => {
       // Close modal
       onClose();
     } catch (err) {
-      alert('An error occurred. Please try again.');
+      console.error('[InquiryModal] Submission error:', err);
+      // Show backend error message if available
+      const errorMsg = err.response?.data?.msg || err.message || 'An error occurred. Please try again.';
+      alert(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -91,6 +99,7 @@ const InquiryModal = ({ isOpen, onClose }) => {
               type="email"
               id="email"
               name="email"
+              data-clarity-unmask="true"
               value={formData.email}
               onChange={handleInputChange}
               placeholder="you@example.com"
@@ -107,6 +116,7 @@ const InquiryModal = ({ isOpen, onClose }) => {
               type="tel"
               id="mobileNumber"
               name="mobileNumber"
+              data-clarity-unmask="true"
               value={formData.mobileNumber}
               onChange={handleInputChange}
               placeholder="+91 98765 43210"

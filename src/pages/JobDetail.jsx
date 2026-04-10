@@ -5,6 +5,37 @@ import JobDetailHeader from '../components/features/JobDetailHeader';
 import JobDetailContent from '../components/features/JobDetailContent';
 import InquiryModal from '../components/features/InquiryModal';
 
+// Simple UUID v4 generator
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Get or create unique device ID
+const getDeviceId = () => {
+  let deviceId = localStorage.getItem('unique_device_id');
+  if (!deviceId) {
+    deviceId = generateUUID();
+    localStorage.setItem('unique_device_id', deviceId);
+  }
+  return deviceId;
+};
+
+// Fetch user IP address
+const fetchUserIp = async () => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    return data.ip;
+  } catch (err) {
+    console.error('[JobDetail] IP fetch failed:', err);
+    return 'unknown';
+  }
+};
+
 const JobDetail = () => {
   const { jobId } = useParams();
   const location = useLocation();
@@ -186,6 +217,43 @@ const JobDetail = () => {
     return sequenceMap;
   };
 
+  const handleInquirySubmit = async (formData) => {
+    try {
+      const deviceId = getDeviceId();
+      const ipAddress = await fetchUserIp();
+
+      const inquiryData = {
+        email: formData.email,
+        mobileNumber: formData.mobileNumber,
+        ipAddress: ipAddress,
+        deviceId: deviceId,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        jobId: jobId
+      };
+
+      console.log('[JobDetail] Submitting inquiry:', inquiryData);
+      
+      // Send to backend API
+      const response = await api.post('/api/jobs/inquiry', inquiryData);
+      
+      console.log('[JobDetail] Inquiry submitted successfully:', response.data);
+      return true;
+    } catch (err) {
+      const errorMsg = err.response?.data?.msg || err.message;
+      console.error('[JobDetail] Failed to submit inquiry:', errorMsg);
+      
+      // If backend returned a validation error but saved the data, re-throw with the message
+      if (err.response?.data?.saved) {
+        const error = new Error(errorMsg);
+        error.response = err.response;
+        throw error;
+      }
+      
+      throw err;
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
       
@@ -230,6 +298,7 @@ const JobDetail = () => {
       <InquiryModal
         isOpen={showInquiryModal}
         onClose={() => setShowInquiryModal(false)}
+        onSubmit={handleInquirySubmit}
       />
     </div>
   );

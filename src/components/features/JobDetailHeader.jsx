@@ -44,27 +44,41 @@ const JobDetailHeader = ({
           {isPublicView && (
             <button
               onClick={onInquireClick}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50"
-              title="Contact our team about installing this system"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+              title="Request a demo and schedule installation"
             >
-              <span className="material-symbols-outlined text-lg">mail</span>
-              <span className="text-sm">Inquire</span>
+              <span className="text-sm">Contact Team</span>
             </button>
           )}
           {job && !isPublicView && (
-            <div className="relative share-menu-container">
+            <>
               <button
-                onClick={() => setShowShareMenu(!showShareMenu)}
-                disabled={!job.isPublic}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+                onClick={handleTogglePublic}
+                disabled={togglingPublic}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded text-sm font-medium transition-colors ${
                   job.isPublic
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
-                }`}
-                title={job.isPublic ? 'Share this job' : 'Make job public to share'}
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                } ${togglingPublic ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={`Click to make ${job.isPublic ? 'private' : 'public'}`}
               >
-                <span className="material-symbols-outlined text-lg">share</span>
+                <span className="material-symbols-outlined text-base">
+                  {job.isPublic ? 'public' : 'lock'}
+                </span>
               </button>
+              <div className="relative share-menu-container">
+                <button
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                  disabled={!job.isPublic}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded text-sm font-medium transition-colors ${
+                    job.isPublic
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-50'
+                  }`}
+                  title={job.isPublic ? 'Share this job' : 'Make job public to share'}
+                >
+                  <span className="material-symbols-outlined text-base">share</span>
+                </button>
               
               {/* Share Menu */}
               {showShareMenu && job.isPublic && (
@@ -107,24 +121,8 @@ const JobDetailHeader = ({
                   </button>
                 </div>
               )}
-            </div>
-          )}
-          {job && !isPublicView && (
-            <button
-              onClick={handleTogglePublic}
-              disabled={togglingPublic}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
-                job.isPublic
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-              } ${togglingPublic ? 'opacity-50 cursor-not-allowed' : ''}`}
-              title={`Click to make ${job.isPublic ? 'private' : 'public'}`}
-            >
-              <span className="material-symbols-outlined text-lg">
-                {job.isPublic ? 'public' : 'lock'}
-              </span>
-              <span className="text-sm">{job.isPublic ? 'Public' : 'Private'}</span>
-            </button>
+              </div>
+            </>
           )}
         </div>
       </div>
