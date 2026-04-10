@@ -5,6 +5,7 @@ const DetectionImageCarousel = ({
   detections, 
   selectedDetectionId,
   sequenceNumbers,
+  isPublicView = false,
   onClose,
   onDetectionChange,
   onDetectionDeleted
@@ -95,9 +96,9 @@ const DetectionImageCarousel = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleDeleteDetection}
-              disabled={isDeleting}
+              disabled={isDeleting || isPublicView}
               className="text-red-500 hover:text-red-600 disabled:text-red-400 disabled:cursor-not-allowed p-2 -ml-2 transition-colors"
-              title="Delete detection"
+              title={isPublicView ? "Cannot delete detections in public view" : "Delete detection"}
             >
               <span className="material-symbols-outlined text-2xl">delete</span>
             </button>

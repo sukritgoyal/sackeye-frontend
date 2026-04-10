@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import DetectionGallery from '../components/features/DetectionGallery';
-import VideoPlayer from '../components/features/VideoPlayer';
-import MarkedDetectionsBar from '../components/features/MarkedDetectionsBar';
-import DetectionImageCarousel from '../components/features/DetectionImageCarousel';
-import Loader from '../components/common/Loader';
+import JobDetailHeader from '../components/features/JobDetailHeader';
+import JobDetailContent from '../components/features/JobDetailContent';
 
 const JobDetail = () => {
-  const navigate = useNavigate();
   const { jobId } = useParams();
+  const location = useLocation();
+  const isPublicView = location.pathname.startsWith('/public/');
   const [loading, setLoading] = useState(true);
   const [detections, setDetections] = useState([]);
   const [job, setJob] = useState(null);
@@ -18,6 +16,8 @@ const JobDetail = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [markedDetections, setMarkedDetections] = useState([]);
   const [selectedCarouselDetectionId, setSelectedCarouselDetectionId] = useState(null);
+  const [togglingPublic, setTogglingPublic] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   // Fetch job details and detections
   useEffect(() => {
@@ -32,7 +32,12 @@ const JobDetail = () => {
       setLoading(true);
       try {
         // Fetch job details
-        // const jobResponse = await api.get(`/api/jobs/${jobId}`);
+        try {
+          const jobResponse = await api.get(`/api/jobs/${jobId}`);
+          setJob(jobResponse.data);
+        } catch (jobErr) {
+          console.warn('[JobDetail] Failed to fetch job details:', jobErr.message);
+        }
 
         // Fetch video signed URL
         try {
@@ -84,6 +89,57 @@ const JobDetail = () => {
     setSelectedCarouselDetectionId(null);
   };
 
+  const handleTogglePublic = async () => {
+    if (!job) return;
+    
+    setTogglingPublic(true);
+    try {
+      const response = await api.get(`/api/jobs/${jobId}/togglePublic`);
+      setJob(response.data.job);
+      console.log('[JobDetail] Job public status toggled successfully:', response.data.msg);
+    } catch (err) {
+      console.error('[JobDetail] Failed to toggle job public status:', err.response?.data?.msg || err.message);
+      setError('Failed to toggle job public status');
+    } finally {
+      setTogglingPublic(false);
+    }
+  };
+
+  const handleShare = (platform) => {
+    const shareUrl = `${window.location.origin}/public/job/${jobId}`;
+    const jobTitle = `Check out this job recording`;
+    
+    const shareLinks = {
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${jobTitle}: ${shareUrl}`)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(jobTitle)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(jobTitle)}&url=${encodeURIComponent(shareUrl)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      email: `mailto:?subject=${encodeURIComponent(jobTitle)}&body=${encodeURIComponent(`${jobTitle}: ${shareUrl}`)}`
+    };
+
+    if (platform === 'copy') {
+      navigator.clipboard.writeText(shareUrl);
+      alert('Link copied to clipboard!');
+      setShowShareMenu(false);
+      return;
+    }
+
+    if (navigator.share && platform === 'native') {
+      navigator.share({
+        title: jobTitle,
+        text: 'Check out this job recording',
+        url: shareUrl
+      }).catch(err => console.log('[JobDetail] Share cancelled:', err));
+      setShowShareMenu(false);
+      return;
+    }
+
+    if (shareLinks[platform]) {
+      window.open(shareLinks[platform], '_blank', 'noopener,noreferrer');
+      setShowShareMenu(false);
+    }
+  };
+
   const handleDetectionChange = (detection) => {
     setSelectedCarouselDetectionId(detection._id);
   };
@@ -132,101 +188,40 @@ const JobDetail = () => {
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
       
       {/* Header */}
-      <header className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
-        <div className="flex items-center h-16 px-6 gap-4">
-          <button 
-            onClick={() => navigate(-1)}
-            className="material-symbols-outlined text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 -ml-2 rounded-full transition-colors"
-          >
-            arrow_back
-          </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold tracking-tight">Detections</h1>
-          </div>
-        </div>
-      </header>
+      <JobDetailHeader
+        job={job}
+        jobId={jobId}
+        isPublicView={isPublicView}
+        togglingPublic={togglingPublic}
+        handleTogglePublic={handleTogglePublic}
+        handleShare={handleShare}
+        showShareMenu={showShareMenu}
+        setShowShareMenu={setShowShareMenu}
+      />
 
-      <div className="flex-1 overflow-y-auto">
-        <main className="flex-1 p-6">
-          {/* Loading State */}
-          {loading && (
-            <div className="flex items-center justify-center py-20">
-              <Loader size="lg" text="Loading job details..." />
-            </div>
-          )}
-
-          {/* Error State */}
-          {!loading && error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-              <p className="text-red-700 dark:text-red-300 font-medium">{error}</p>
-            </div>
-          )}
-
-          {/* Video Player Section */}
-          {!loading && !error && videoUrl && (
-            <div className="mb-8">
-              <VideoPlayer
-                videoUrl={videoUrl}
-                title={`Playback`}
-                detections={detections}
-                jobId={jobId}
-                onMarkDetectionForDeletion={handleMarkDetectionForDeletion}
-                onCreateDetection={handleCreateDetection}
-              />
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && detections.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <span className="material-symbols-outlined text-6xl text-slate-200 mb-4">image_not_supported</span>
-              <p className="text-slate-400 font-medium">No detections found for this job</p>
-            </div>
-          )}
-
-          {/* Detections Grid */}
-          {!loading && !error && detections.length > 0 && (
-            <div>
-              <MarkedDetectionsBar 
-                markedDetections={markedDetections}
-                sequenceNumbers={getSequenceNumbers()}
-                onUnmark={handleUnmarkDetection}
-                onSelect={handleSelectMarkedDetection}
-              />
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">
-                  {detections.length} Detections
-                </h2>
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-                  className="flex items-center gap-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors p-2 -mr-2"
-                  title={`Sort by duration (${sortOrder === 'desc' ? 'descending' : 'ascending'})`}
-                >
-                  <span className="material-symbols-outlined text-lg">{sortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward'}</span>
-                </button>
-              </div>
-              <DetectionGallery 
-                detections={detections} 
-                sortOrder={sortOrder}
-                selectedDetectionId={selectedCarouselDetectionId}
-                onDetectionSelect={setSelectedCarouselDetectionId}
-              />
-            </div>
-          )}
-        </main>
-      </div>
-
-      {/* Image Carousel Modal */}
-      {selectedCarouselDetectionId && (
-        <DetectionImageCarousel
-          detections={detections}
-          selectedDetectionId={selectedCarouselDetectionId}
-          sequenceNumbers={getSequenceNumbers()}
-          onClose={handleCloseCarousel}
-          onDetectionChange={handleDetectionChange}
-          onDetectionDeleted={handleDetectionDeleted}
-        />
-      )}
+      {/* Content */}
+      <JobDetailContent
+        loading={loading}
+        error={error}
+        videoUrl={videoUrl}
+        detections={detections}
+        markedDetections={markedDetections}
+        selectedCarouselDetectionId={selectedCarouselDetectionId}
+        sortOrder={sortOrder}
+        jobId={jobId}
+        isPublicView={isPublicView}
+        handleMarkDetectionForDeletion={handleMarkDetectionForDeletion}
+        handleUnmarkDetection={handleUnmarkDetection}
+        handleSelectMarkedDetection={handleSelectMarkedDetection}
+        handleCloseCarousel={handleCloseCarousel}
+        handleDetectionChange={handleDetectionChange}
+        handleDetectionDeleted={handleDetectionDeleted}
+        handleCreateDetection={handleCreateDetection}
+        getSequenceNumbers={getSequenceNumbers}
+        setSortOrder={setSortOrder}
+        setSelectedCarouselDetectionId={setSelectedCarouselDetectionId}
+        setMarkedDetections={setMarkedDetections}
+      />
     </div>
   );
 };

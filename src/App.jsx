@@ -23,8 +23,11 @@ function App() {
         <Route path="/cameras" element={<CameraList />} />
         <Route path="/history/:cameraId" element={<History />} />
         <Route path="/live/:cameraId" element={<LiveMonitor />} />
+        
+        {/* Job Routes */}
         <Route path="/job/:jobId" element={<JobDetail />} />
-
+        <Route path="/public/job/:jobId" element={<JobDetail />} />
+        
         {/* Redirect any unknown path or root to appropriate default route */}
         <Route path="*" element={<Navigate to={defaultRoute} replace />} />
       </Routes>

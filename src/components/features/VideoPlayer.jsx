@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 
-const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetectionForDeletion, onCreateDetection, jobId }) => {
+const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetectionForDeletion, onCreateDetection, jobId, isPublicView = false }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -501,13 +501,15 @@ const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetecti
               </button>
               
               {/* Create Detection */}
-              <button
-                onClick={handleCreateDetection}
-                className="text-white hover:text-red-500 transition-colors p-2 hover:bg-white/10 rounded group"
-                title="Create manual detection"
-              >
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
+              {!isPublicView && (
+                <button
+                  onClick={handleCreateDetection}
+                  className="text-white hover:text-red-500 transition-colors p-2 hover:bg-white/10 rounded group"
+                  title="Create manual detection"
+                >
+                  <span className="material-symbols-outlined text-xl">add</span>
+                </button>
+              )}
             </div>
 
             {/* Right Controls */}
