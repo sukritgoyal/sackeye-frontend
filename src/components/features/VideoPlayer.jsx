@@ -354,7 +354,7 @@ const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetecti
 
   // Generate progress bar background gradient
   const getProgressBarGradient = () => {
-    if (duration === 0) {
+    if (duration === 0 || !detections.length || !playOnlyGapsMode) {
       return `linear-gradient(to right, rgb(239, 68, 68) 0%, rgb(239, 68, 68) ${
         duration > 0 ? (currentTime / duration) * 100 : 0
       }%, rgb(71, 85, 105) ${duration > 0 ? (currentTime / duration) * 100 : 0}%, rgb(71, 85, 105) 100%)`;
@@ -567,7 +567,7 @@ const VideoPlayer = ({ videoUrl, title = 'Video', detections = [], onMarkDetecti
                 }`}
                 title="Toggle: Play only gaps (no detections)"
               >
-                {playOnlyGapsMode ? '🟢 Gaps Only' : '⚫ All'}
+                {playOnlyGapsMode ? 'Gaps Only' : 'All'}
               </button>
 
               {/* Speed Control */}

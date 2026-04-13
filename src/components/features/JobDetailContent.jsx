@@ -56,6 +56,13 @@ const JobDetailContent = ({
               onMarkDetectionForDeletion={handleMarkDetectionForDeletion}
               onCreateDetection={handleCreateDetection}
             />
+            {/* Help Text */}
+            <div className="mt-3 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">info</span>
+              <span>
+                <strong>Double-click:</strong> left side to jump to previous event, right side for next event, center to mark detection
+              </span>
+            </div>
           </div>
         )}
 

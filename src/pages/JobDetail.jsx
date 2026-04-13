@@ -4,6 +4,7 @@ import api from '../api/axiosConfig';
 import JobDetailHeader from '../components/features/JobDetailHeader';
 import JobDetailContent from '../components/features/JobDetailContent';
 import InquiryModal from '../components/features/InquiryModal';
+import { useSearchParams } from 'react-router-dom';
 
 // Simple UUID v4 generator
 const generateUUID = () => {
@@ -51,7 +52,10 @@ const JobDetail = () => {
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
-
+  const [searchParams] = useSearchParams();
+  const deviceId = getDeviceId();
+  const group = searchParams.get('group');
+  
   // Fetch job details and detections
   useEffect(() => {
     const fetchJobData = async () => {
@@ -66,7 +70,7 @@ const JobDetail = () => {
       try {
         // Fetch job details
         try {
-          const jobResponse = await api.get(`/api/jobs/${jobId}`);
+          const jobResponse = await api.get(`/api/jobs/${jobId}?group=${group}&deviceId=${deviceId}`);
           setJob(jobResponse.data);
         } catch (jobErr) {
           console.warn('[JobDetail] Failed to fetch job details:', jobErr.message);
@@ -219,9 +223,7 @@ const JobDetail = () => {
 
   const handleInquirySubmit = async (formData) => {
     try {
-      const deviceId = getDeviceId();
       const ipAddress = await fetchUserIp();
-
       const inquiryData = {
         email: formData.email,
         mobileNumber: formData.mobileNumber,

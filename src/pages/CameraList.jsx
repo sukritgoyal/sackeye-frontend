@@ -8,11 +8,6 @@ const CameraList = () => {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   // 1. Fetch Cameras from API
   useEffect(() => {
     const fetchCameras = async () => {
@@ -37,11 +32,11 @@ const CameraList = () => {
         <div className="flex items-center h-16 justify-between px-6">
           <h1 className="tracking-tight text-3xl font-bold leading-tight">Your Cameras</h1>
           <button 
-            onClick={handleLogout}
-            className="flex items-center justify-center rounded-xl h-12 w-12 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors"
-            title="Logout"
+            onClick={() => navigate('/profile')}
+            className="flex items-center justify-center rounded-xl h-12 w-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            title="Profile"
           >
-            <span className="material-symbols-outlined">logout</span>
+            <span className="material-symbols-outlined">account_circle</span>
           </button>
         </div>
       </header>

@@ -79,7 +79,7 @@ const InquiryModal = ({ isOpen, onClose, onSubmit }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Install Inquiry
+            Inquiry Now
           </h2>
           <button
             onClick={onClose}
@@ -126,7 +126,7 @@ const InquiryModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            We'll use this information to contact you about installing our system.
+            We'll reach you soon!
           </p>
         </form>
 

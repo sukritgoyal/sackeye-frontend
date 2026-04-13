@@ -31,12 +31,14 @@ const JobDetailHeader = ({
   return (
     <header className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
       <div className="flex items-center h-16 px-6 gap-4">
-        <button 
-          onClick={() => navigate(-1)}
-          className="material-symbols-outlined text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 -ml-2 rounded-full transition-colors"
-        >
-          arrow_back
-        </button>
+        {!isPublicView && (
+          <button 
+            onClick={() => navigate(-1)}
+            className="material-symbols-outlined text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 -ml-2 rounded-full transition-colors"
+          >
+            arrow_back
+          </button>
+        )}
         <div className="flex-1">
           <h1 className="text-xl font-bold tracking-tight">Detections</h1>
         </div>
@@ -47,7 +49,7 @@ const JobDetailHeader = ({
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
               title="Request a demo and schedule installation"
             >
-              <span className="text-sm">Contact Team</span>
+              <span className="text-sm">Contact Us</span>
             </button>
           )}
           {job && !isPublicView && (
