@@ -14,6 +14,15 @@ const PlaybackModal = ({ isOpen, onClose, onSubmitMarkPoints, onSubmitPlayback, 
   const [points, setPoints] = useState([]);
   const [strict, setStrict] = useState(false);
 
+  // Set date to today when modal opens
+  useEffect(() => {
+    if (isOpen && !date) {
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      setDate(formattedDate);
+    }
+  }, [isOpen]);
+
   // Check duration when times change
   useEffect(() => {
     if (startTime && endTime && startTime < endTime) {

@@ -153,6 +153,20 @@ const History = () => {
           <div className="flex-1">
             <h1 className="text-xl font-bold tracking-tight">Camera Activity</h1>
           </div>
+          <button 
+            onClick={handleStartJob}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors active:scale-[0.98] text-sm whitespace-nowrap"
+          >
+            {loading ? (
+              <span>Starting...</span>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-base">play_arrow</span>
+                <span>Live</span>
+              </>
+            )}
+          </button>
         </div>
       </header>
 
@@ -160,28 +174,13 @@ const History = () => {
         {/* Quick Action Start Button */}
         <div className="p-6 pb-4 space-y-3">
           <button 
-            onClick={handleStartJob}
-            disabled={loading}
+            onClick={() => setIsPlaybackModalOpen(true)}
             className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-slate-400 disabled:cursor-not-allowed text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-3 transition-colors active:scale-[0.98] text-base"
           >
-            {loading ? (
-              <>
-                <span>Starting Analysis...</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined">play_arrow</span>
-                Start New Analysis
-              </>
-            )}
+            <span className="material-symbols-outlined">history</span>
+            Start New Analysis
           </button>
 
-          <button 
-            onClick={() => setIsPlaybackModalOpen(true)}
-            className="w-full bg-black hover:bg-zinc-800 active:bg-zinc-900 text-white font-bold h-14 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] text-base"          >
-            <span className="material-symbols-outlined">history</span>
-            Generate Playback
-          </button>
         </div>
 
         <main className="flex-1 p-6 pt-0">

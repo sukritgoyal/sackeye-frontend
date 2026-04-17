@@ -6,6 +6,7 @@ const CameraList = () => {
   const [cameras, setCameras] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [cameraStatus, setCameraStatus] = useState({});
   const navigate = useNavigate();
 
   // 1. Fetch Cameras from API
@@ -15,6 +16,11 @@ const CameraList = () => {
         const res = await api.get('/api/cameras');
         console.log("Fetched cameras:", res.data);
         setCameras(res.data);
+        
+        // Fetch status for each camera
+        res.data.forEach(cam => {
+          fetchCameraStatus(cam._id);
+        });
       } catch (err) {
         console.error("Failed to fetch cameras", err);
       } finally {
@@ -23,6 +29,47 @@ const CameraList = () => {
     };
     fetchCameras();
   }, []);
+
+  // Fetch camera status
+  const fetchCameraStatus = async (cameraId) => {
+    try {
+      const res = await api.get(`/api/cameras/${cameraId}/status`);
+      setCameraStatus(prev => ({
+        ...prev,
+        [cameraId]: res.data
+      }));
+    } catch (err) {
+      console.error(`Failed to fetch status for camera ${cameraId}`, err);
+      setCameraStatus(prev => ({
+        ...prev,
+        [cameraId]: { status: 'error' }
+      }));
+    }
+  };
+
+  // Get dot color based on status
+  const getStatusColor = (camId) => {
+    const status = cameraStatus[camId];
+    if (!status) return 'bg-slate-300'; // grey while loading
+    if (status.status === 'online') return 'bg-emerald-500'; // green
+    if (status.status === 'offline') return 'bg-red-500'; // red
+    return 'bg-slate-300'; // grey for error
+  };
+
+  // Get status text
+  const getStatusText = (camId) => {
+    const status = cameraStatus[camId];
+    if (!status) return null;
+    if (status.status === 'offline' && status.minutesAgo !== undefined) {
+      if (status.minutesAgo < 60) {
+        return `Last: ${Math.round(status.minutesAgo)}m ago`;
+      } else {
+        const hours = Math.round(status.minutesAgo / 60);
+        return `Last: ${hours}h ago`;
+      }
+    }
+    return null;
+  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
@@ -61,12 +108,17 @@ const CameraList = () => {
               >
                 <div className="flex flex-col gap-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-emerald-500"></span>
+                    <span className={`size-2 rounded-full ${getStatusColor(cam._id)}`}></span>
                     <p className="text-base font-bold leading-tight">{cam.name}</p>
                   </div>
                   <p className="text-slate-400 text-xs font-medium tracking-wider uppercase">
                     {cam.ip_address}:{cam.port}
                   </p>
+                  {getStatusText(cam._id) && (
+                    <p className="text-red-500 text-xs font-medium mt-1">
+                      {getStatusText(cam._id)}
+                    </p>
+                  )}
                 </div>
                 <div className="w-20 h-14 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-100 dark:border-slate-700">
                   <span className="material-symbols-outlined text-slate-300">videocam</span>
