@@ -25,7 +25,8 @@ const JobDetailContent = ({
   getSequenceNumbers,
   setSortOrder,
   setSelectedCarouselDetectionId,
-  setMarkedDetections
+  setMarkedDetections,
+  emptyMessage = 'No detections found for this job'
 }) => {
   // Never show explicitly user-deleted detections, in either grid.
   const visibleDetections = detections.filter((d) => !d.isDeleted);
@@ -117,7 +118,7 @@ const JobDetailContent = ({
         {!loading && !error && visibleDetections.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <span className="material-symbols-outlined text-6xl text-slate-200 mb-4">image_not_supported</span>
-            <p className="text-slate-400 font-medium">No detections found for this job</p>
+            <p className="text-slate-400 font-medium">{emptyMessage}</p>
           </div>
         )}
 

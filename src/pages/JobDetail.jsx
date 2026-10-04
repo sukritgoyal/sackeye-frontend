@@ -4,6 +4,8 @@ import api from '../api/axiosConfig';
 import JobDetailHeader from '../components/features/JobDetailHeader';
 import JobDetailContent from '../components/features/JobDetailContent';
 import InquiryModal from '../components/features/InquiryModal';
+import InferenceBanner from '../components/features/InferenceBanner';
+import RunInferenceModal from '../components/features/RunInferenceModal';
 import { useSearchParams } from 'react-router-dom';
 
 // Simple UUID v4 generator
@@ -52,6 +54,7 @@ const JobDetail = () => {
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
+  const [showRunModal, setShowRunModal] = useState(false);
   const [searchParams] = useSearchParams();
   const deviceId = getDeviceId();
   const group = searchParams.get('group');
@@ -104,6 +107,28 @@ const JobDetail = () => {
 
     fetchJobData();
   }, [jobId]);
+
+  // While the video is being prepared or inference is running, check for progress every few seconds
+  const jobStatus = job?.status;
+  const inferenceState = job?.inference_state;
+  useEffect(() => {
+    if (!jobId || isPublicView) return undefined;
+    if (jobStatus !== 'processing' && inferenceState !== 'running') return undefined;
+    const timer = setInterval(async () => {
+      try {
+        const [jobRes, detectionsRes] = await Promise.all([api.get(`/api/jobs/${jobId}`), api.get(`/api/jobs/${jobId}/detections`)]);
+        setJob(jobRes.data);
+        setDetections(detectionsRes.data || []);
+        if (jobStatus === 'processing' && jobRes.data.status !== 'processing') {
+          const videoRes = await api.get(`/api/jobs/video/${jobId}`);
+          setVideoUrl(videoRes.data.link);
+        }
+      } catch (err) {
+        console.warn('[JobDetail] Progress check failed:', err.message);
+      }
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [jobId, isPublicView, jobStatus, inferenceState]);
 
   const handleMarkDetectionForDeletion = (detection) => {
     // Check if already marked
@@ -272,6 +297,8 @@ const JobDetail = () => {
         onInquireClick={() => setShowInquiryModal(true)}
       />
 
+      {!isPublicView && <InferenceBanner job={job} onRun={() => setShowRunModal(true)} />}
+
       {/* Content */}
       <JobDetailContent
         loading={loading}
@@ -294,6 +321,19 @@ const JobDetail = () => {
         setSortOrder={setSortOrder}
         setSelectedCarouselDetectionId={setSelectedCarouselDetectionId}
         setMarkedDetections={setMarkedDetections}
+        emptyMessage={
+          job?.status === 'processing' ? 'The video for this job is still being prepared'
+            : job?.inference_state === 'pending' ? 'Inference has not been run for this job yet'
+            : job?.inference_state === 'running' ? 'Inference is running. Detections will appear here'
+            : 'No detections found for this job'
+        }
+      />
+
+      <RunInferenceModal
+        isOpen={showRunModal}
+        job={job}
+        onClose={() => setShowRunModal(false)}
+        onStarted={(updated) => { setJob(updated); setShowRunModal(false); }}
       />
 
       {/* Inquiry Modal */}

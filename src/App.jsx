@@ -5,6 +5,7 @@ import History from './pages/History';
 import LiveMonitor from './pages/LiveMonitor';
 import JobDetail from './pages/JobDetail';
 import Profile from './pages/Profile';
+import TimeRanges from './pages/TimeRanges';
 
 function App() {
   const isAuthenticated = () => {
@@ -23,6 +24,7 @@ function App() {
         {/* Camera Management Routes */}
         <Route path="/cameras" element={<CameraList />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/time-ranges" element={<TimeRanges />} />
         <Route path="/history/:cameraId" element={<History />} />
         <Route path="/live/:cameraId" element={<LiveMonitor />} />
         

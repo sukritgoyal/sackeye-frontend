@@ -1,14 +1,24 @@
 import React from 'react';
 import { formatDateSmart } from '../../utils/formatDate';
+import { jobDisplayState } from '../../utils/jobState';
+
+// Every state uses the same plain card; only the small status label changes.
+const STATES = {
+  preparing: { label: 'Preparing video', dot: 'bg-blue-500 animate-pulse', text: 'text-blue-600 dark:text-blue-400' },
+  pending: { label: 'Pending', dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+  running: { label: 'Running', dot: 'bg-blue-500 animate-pulse', text: 'text-blue-600 dark:text-blue-400' },
+  done: { label: 'Done', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+  failed: { label: 'Failed', dot: 'bg-red-500', text: 'text-red-600 dark:text-red-400' },
+};
 
 const JobCard = ({ job, onClick }) => {
   const jobDate = new Date(job.startTime);
   const dateStr = formatDateSmart(jobDate, 'Asia/Kolkata');
   const startTimeStr = jobDate.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  
+
   const endTime = job.endTime ? new Date(job.endTime) : null;
   const endTimeStr = endTime ? endTime.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : null;
-  
+
   const getDurationStr = () => {
     if (!endTime) return null;
     const durationMs = endTime - jobDate;
@@ -17,13 +27,14 @@ const JobCard = ({ job, onClick }) => {
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
   };
-  
+
   const durationStr = getDurationStr();
+  const state = STATES[jobDisplayState(job)] || STATES.done;
 
   return (
-    <div 
+    <div
       onClick={onClick}
-      className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/60 dark:border-slate-700 shadow-sm flex items-center justify-between group active:bg-slate-50 transition-colors cursor-pointer hover:shadow-md"
+      className={`group flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition-colors hover:shadow-md active:bg-slate-50 dark:border-slate-700 dark:bg-slate-800`}
     >
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
@@ -48,8 +59,9 @@ const JobCard = ({ job, onClick }) => {
       </div>
 
       <div className="flex flex-col items-end gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-tighter px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-500 capitalize">
-          {job.status}
+        <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide ${state.text}`}>
+          <span className={`size-1.5 rounded-full ${state.dot}`} />
+          {state.label}
         </span>
         <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors">chevron_right</span>
       </div>

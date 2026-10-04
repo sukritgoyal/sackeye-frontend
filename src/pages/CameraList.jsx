@@ -91,6 +91,20 @@ const CameraList = () => {
       <main className="flex-1">
         {/* List of Cameras */}
         <section className="p-6 space-y-4">
+          <button
+            onClick={() => navigate('/time-ranges')}
+            className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-2xl p-4 flex items-center gap-4 text-left transition-colors active:scale-[0.98] shadow-sm"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+              <span className="material-symbols-outlined">schedule</span>
+            </span>
+            <span className="flex flex-1 flex-col">
+              <span className="text-base font-bold leading-tight">Select time ranges</span>
+              <span className="text-sm font-medium text-white/80">Pick truck stays from the camera frames</span>
+            </span>
+            <span className="material-symbols-outlined text-white/70">chevron_right</span>
+          </button>
+
           <h3 className="text-lg font-bold leading-tight tracking-tight mb-4">Connected Devices</h3>
           
           {loading ? (

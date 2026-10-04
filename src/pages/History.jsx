@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import JobCard from '../components/features/JobCard';
 import PlaybackModal from '../components/features/PlaybackModal';
+import JobFilters from '../components/features/JobFilters';
+import { dayStartOf } from '../utils/timeRange';
+import { jobDisplayState, jobDayBucket, groupHeading } from '../utils/jobState';
 
 const History = () => {
   const navigate = useNavigate();
@@ -14,6 +17,36 @@ const History = () => {
   const [isPlaybackModalOpen, setIsPlaybackModalOpen] = useState(false);
   const [playbackLoading, setPlaybackLoading] = useState(false);
   const [playbackImageUrl, setPlaybackImageUrl] = useState('');
+  const [dayFilters, setDayFilters] = useState(() => new Set());     // empty = all days
+  const [stateFilters, setStateFilters] = useState(() => new Set()); // empty = all states
+  const [todayMs] = useState(() => dayStartOf(Date.now()));
+
+  const toggle = (setter) => (key) => setter((prev) => {
+    const next = new Set(prev);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
+  // 'preparing' (video still being cut) counts as pending
+  const stateKey = (job) => { const s = jobDisplayState(job); return s === 'preparing' ? 'pending' : s; };
+
+  const { dayCounts, stateCounts, groups } = useMemo(() => {
+    const dayCounts = {}, stateCounts = {};
+    historyJobs.forEach((j) => {
+      const d = jobDayBucket(j, todayMs), s = stateKey(j);
+      dayCounts[d] = (dayCounts[d] || 0) + 1;
+      stateCounts[s] = (stateCounts[s] || 0) + 1;
+    });
+    const shown = historyJobs
+      .filter((j) => (!dayFilters.size || dayFilters.has(jobDayBucket(j, todayMs))) && (!stateFilters.size || stateFilters.has(stateKey(j))))
+      .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    const groups = [];
+    shown.forEach((j) => {
+      const heading = groupHeading(j, todayMs);
+      const last = groups[groups.length - 1];
+      if (last && last.heading === heading) last.jobs.push(j); else groups.push({ heading, jobs: [j] });
+    });
+    return { dayCounts, stateCounts, groups };
+  }, [historyJobs, dayFilters, stateFilters, todayMs]);
 
   // Fetch jobs for this camera on component mount
   useEffect(() => {
@@ -186,8 +219,14 @@ const History = () => {
         <main className="flex-1 p-6 pt-0">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">Recent Sessions</h2>
-          <span className="material-symbols-outlined text-slate-400">filter_list</span>
         </div>
+
+        {!historyLoading && !error && historyJobs.length > 0 && (
+          <JobFilters
+            days={dayFilters} states={stateFilters} dayCounts={dayCounts} stateCounts={stateCounts}
+            onToggleDay={toggle(setDayFilters)} onToggleState={toggle(setStateFilters)}
+          />
+        )}
 
         {/* Loading State */}
         {historyLoading && (
@@ -207,18 +246,26 @@ const History = () => {
 
         {/* List of Past Jobs */}
         {!historyLoading && !error && historyJobs.length > 0 && (
-          <div className="space-y-4">
-            {historyJobs.map((job) => (
-              <JobCard 
-                key={job._id} 
-                job={job} 
-                onClick={() =>
-                  navigate(`/job/${job._id}`, {
-                    state: { jobId: job.job_id, cameraId },
-                  })
-                }
-              />
+          <div className="space-y-6">
+            {groups.map((group) => (
+              <div key={group.heading} className="space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{group.heading}</h3>
+                {group.jobs.map((job) => (
+                  <JobCard
+                    key={job._id}
+                    job={job}
+                    onClick={() =>
+                      navigate(`/job/${job._id}`, {
+                        state: { jobId: job.job_id, cameraId },
+                      })
+                    }
+                  />
+                ))}
+              </div>
             ))}
+            {groups.length === 0 && (
+              <p className="py-10 text-center font-medium text-slate-400">No sessions match these filters.</p>
+            )}
           </div>
         )}
 
