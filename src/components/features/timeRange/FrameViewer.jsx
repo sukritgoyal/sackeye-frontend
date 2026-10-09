@@ -54,7 +54,7 @@ const FrameViewer = ({ frames, index, filters, imageUrls, onChange, onClose }) =
         ))}
       </div>
       <div className="text-center text-[15px] text-white">
-        {clock(frame.ms)} · {boxes.length ? `${boxes.length} truck box${boxes.length > 1 ? 'es' : ''}` : 'no truck'} · {index + 1}/{frames.length}
+        {clock(frame.ms)}{frame.processed === false ? '' : ` · ${boxes.length ? `${boxes.length} truck box${boxes.length > 1 ? 'es' : ''}` : 'no truck'}`} · {index + 1}/{frames.length}
       </div>
     </div>
   );

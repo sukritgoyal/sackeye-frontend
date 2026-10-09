@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { submitTimeRanges } from '../api/timeRanges';
+import { submitTimeRanges, startDetection, fetchDetectionRun } from '../api/timeRanges';
 import { useDayFrames } from '../hooks/useDayFrames';
 import { useImageUrls } from '../hooks/useImageUrls';
 import AlertDialog from '../components/common/AlertDialog';
@@ -11,6 +11,7 @@ import RangeBar from '../components/features/timeRange/RangeBar';
 import DayControls from '../components/features/timeRange/DayControls';
 import FrameGallery from '../components/features/timeRange/FrameGallery';
 import FrameViewer from '../components/features/timeRange/FrameViewer';
+import DetectionBar from '../components/features/timeRange/DetectionBar';
 import FilterSheet from '../components/features/timeRange/FilterSheet';
 import SelectedRangesSheet from '../components/features/timeRange/SelectedRangesSheet';
 import TimeScrubber from '../components/features/timeRange/TimeScrubber';
@@ -50,6 +51,8 @@ const TimeRanges = () => {
   const [submitResult, setSubmitResult] = useState(null);
   const [toast, setToast] = useState('');
 
+  const [detect, setDetect] = useState({ confirm: false, running: false, elapsed: 0, error: '' });
+  const mounted = useRef(true);
   const lockUntil = useRef(0);
   const anchor = useRef(null);                               // what to keep in place when the list re-renders
   const toastTimer = useRef(0);
@@ -60,6 +63,8 @@ const TimeRanges = () => {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 2200);
   }, []);
+
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   // ---- cameras
   useEffect(() => {
@@ -72,15 +77,20 @@ const TimeRanges = () => {
   // ---- frames of the chosen day: 05:00-23:00 IST, or the whole day when night is included
   const winFrom = dayMs + (filters.night ? 0 : 5 * HOUR);
   const winTo = Math.min(dayMs + (filters.night ? 24 : 23) * HOUR, nowMs + MIN);
-  const { frames, loading, error } = useDayFrames(cameraId, winFrom, winTo);
+  const { frames, loading, error, reload } = useDayFrames(cameraId, winFrom, winTo);
   const imageUrls = useImageUrls(cameraId);
 
   const byMs = useMemo(() => new Map(frames.map((f) => [f.ms, f])), [frames]);
   const { conf, area, gap, stay, showAll } = filters;
+  // Truck detection only exists for frames it has been run on. The truck-range view (arrows, Expand, filters) is used only
+  // when every frame of the day has been checked; otherwise the day is shown as plain frames so none are hidden.
+  const missing = useMemo(() => frames.filter((f) => f.processed === false).length, [frames]);
+  const fullyChecked = frames.length > 0 && missing === 0;
+  const viewAll = showAll || !fullyChecked;
   const detected = useMemo(() => computeRanges(frames, { conf, area, gap, stay }), [frames, conf, area, gap, stay]);
   const sections = useMemo(
-    () => buildSections({ frames, byMs, ranges: detected, expanded, pins: [selection.start, selection.end], showAll }),
-    [frames, byMs, detected, expanded, selection.start, selection.end, showAll],
+    () => buildSections({ frames, byMs, ranges: detected, expanded, pins: [selection.start, selection.end], showAll: viewAll }),
+    [frames, byMs, detected, expanded, selection.start, selection.end, viewAll],
   );
   const listed = useMemo(() => sections.flatMap((s) => s.frames), [sections]);
   const currentIndex = Math.min(current, Math.max(detected.length - 1, 0));
@@ -208,11 +218,34 @@ const TimeRanges = () => {
     }
   };
 
+  // ---- run truck detection for this day's frames that have no result yet
+  const runDetection = async () => {
+    setDetect({ confirm: false, running: true, elapsed: 0, error: '' });
+    try {
+      let run = await startDetection(cameraId, winFrom, winTo);
+      while (run.status === 'running') {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (!mounted.current) return;
+        run = await fetchDetectionRun(cameraId, run.id);
+        setDetect((d) => ({ ...d, elapsed: run.elapsed_s }));
+      }
+      if (run.status === 'done') {
+        await reload();
+        showToast(run.detected ? `Detection finished on ${run.detected} frames` : 'Detection finished');
+        setDetect({ confirm: false, running: false, elapsed: 0, error: '' });
+      } else {
+        setDetect({ confirm: false, running: false, elapsed: 0, error: run.status === 'busy' ? 'Another detection run is in progress.' : 'Detection failed. Please try again.' });
+      }
+    } catch (err) {
+      setDetect({ confirm: false, running: false, elapsed: 0, error: err.response?.data?.msg || err.message });
+    }
+  };
+
   const back = () => (picked.length ? setLeaveOpen(true) : navigate('/cameras'));
   const pickedHere = useMemo(() => picked.filter((r) => r.cameraId === cameraId), [picked, cameraId]);
   const subtitle = `${dayLabel(dayMs)} · ${camera?.name || ''}`;
   const hits = frames.filter((f) => visibleBoxes(f, filters).length).length;
-  const filtersActive = conf !== FILTER_DEFAULTS.conf || area !== FILTER_DEFAULTS.area || showAll;
+  const filtersActive = fullyChecked ? (conf !== FILTER_DEFAULTS.conf || area !== FILTER_DEFAULTS.area || showAll) : filters.night;
 
   return (
     <div ref={rootRef} className="relative mx-auto min-h-screen w-full max-w-md bg-[#f3f4f7] pt-[calc(102px+env(safe-area-inset-top))] font-display text-[15px] text-[#1b2330] antialiased dark:bg-[#12161d] dark:text-[#e8ecf3]">
@@ -223,10 +256,14 @@ const TimeRanges = () => {
         onConfirm={confirmSelection} onCancel={() => setSelection(IDLE)}
       />
       <RangeBar
-        ranges={detected} current={currentIndex} subtitle={subtitle} hasFrames={frames.length > 0} loading={loading} filtersActive={filtersActive}
+        ranges={detected} current={currentIndex} subtitle={subtitle} hasFrames={frames.length > 0} frameCount={frames.length} showNav={fullyChecked} loading={loading} filtersActive={filtersActive}
         onPrev={() => goTo(currentIndex - 1)} onNext={() => goTo(currentIndex + 1)} onJump={() => goTo(currentIndex)} onOpenFilters={() => setFiltersOpen(true)}
       />
       <DayControls cameras={cameras} cameraId={cameraId} onCameraChange={changeCamera} dayMs={dayMs} todayMs={todayMs} onDayChange={changeDay} onBack={back} />
+
+      {!loading && !error && missing > 0 && (
+        <DetectionBar missing={missing} running={detect.running} elapsed={detect.elapsed} error={detect.error} onRun={() => setDetect((d) => ({ ...d, confirm: true, error: '' }))} />
+      )}
 
       {loading && <div className="flex justify-center py-16"><Loader size="md" text="Loading frames…" /></div>}
       {!loading && error && <div className="mx-3 mt-1.5 rounded-[10px] border border-[#dfe3ea] bg-white p-3 text-sm dark:border-[#2f3745] dark:bg-[#1c222c]">{error}</div>}
@@ -237,15 +274,15 @@ const TimeRanges = () => {
       )}
       {!loading && !error && (
         <FrameGallery
-          sections={sections} imageUrls={imageUrls} selection={selection} pendingRanges={pickedHere} reserveRight={showAll}
+          sections={sections} imageUrls={imageUrls} selection={selection} pendingRanges={pickedHere} reserveRight={viewAll}
           onTileClick={tileClick} onZoom={(ms) => setViewerIndex(listed.findIndex((f) => f.ms === ms))} onToggleExpand={toggleExpand}
         />
       )}
 
-      {showAll && !loading && !error && listed.length > 0 && <TimeScrubber layoutKey={listed.length} selection={selection} pendingRanges={pickedHere} />}
+      {viewAll && !loading && !error && listed.length > 0 && <TimeScrubber layoutKey={listed.length} selection={selection} pendingRanges={pickedHere} />}
 
       <FilterSheet
-        isOpen={filtersOpen} filters={filters} onChange={changeFilters} onClose={() => setFiltersOpen(false)}
+        isOpen={filtersOpen} filters={filters} hasDetections={fullyChecked} onChange={changeFilters} onClose={() => setFiltersOpen(false)}
         summary={`${detected.length} truck range(s) · ${hits} of ${frames.length} frames with a truck`}
       />
       <SelectedRangesSheet
@@ -257,6 +294,11 @@ const TimeRanges = () => {
       {viewerIndex != null && listed[viewerIndex] && (
         <FrameViewer frames={listed} index={viewerIndex} filters={filters} imageUrls={imageUrls} onChange={setViewerIndex} onClose={() => setViewerIndex(null)} />
       )}
+      <AlertDialog
+        isOpen={detect.confirm} onClose={() => setDetect((d) => ({ ...d, confirm: false }))} onConfirm={runDetection}
+        title="Run truck detection?" message={`This runs detection in the cloud on the ${missing} frame${missing === 1 ? '' : 's'} of ${dayLabel(dayMs)} that have not been checked yet. It can take a few minutes and has a small cost.`}
+        cancelText="Cancel" confirmText="Run" icon="play_circle" variant="blue"
+      />
       <AlertDialog
         isOpen={leaveOpen} onClose={() => setLeaveOpen(false)} onConfirm={() => navigate('/cameras')}
         title="Leave without submitting?" message={`You have ${picked.length} selected time range${picked.length === 1 ? '' : 's'} that ${picked.length === 1 ? 'has' : 'have'} not been submitted. They will be lost.`}
